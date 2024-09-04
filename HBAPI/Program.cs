@@ -1,52 +1,76 @@
+using HBAPI.Data;
+using HBAPI.Converters;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.Text.Json.Serialization;
 
-namespace HBAPI;
+var builder = WebApplication.CreateBuilder(args);
 
-public class Program
+// Configure services
+builder.Services.AddDbContext<HbDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(8, 0, 21))
+    )
+);
+
+// Add services to the container
+builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
+    // Serialize enums as strings in JSON responses
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    
+    // Add custom converter for DateTime serialization as "yyyy-MM-dd"
+    options.JsonSerializerOptions.Converters.Add(new DateOnlyConverter());
 
-        // Add services to the container.
-        builder.Services.AddAuthorization();
+    // Handle circular references by ignoring them
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    
+    // Other serialization options can be added here if needed
+});
 
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+// Add Swagger services
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
-        var app = builder.Build();
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin",
+        policy => policy.WithOrigins("http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
+var app = builder.Build();
 
-        app.UseHttpsRedirection();
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
 
-        app.UseAuthorization();
-
-        var summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
-        app.MapGet("/weatherforecast", (HttpContext httpContext) =>
-        {
-            var forecast =  Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                {
-                    Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    TemperatureC = Random.Shared.Next(-20, 55),
-                    Summary = summaries[Random.Shared.Next(summaries.Length)]
-                })
-                .ToArray();
-            return forecast;
-        })
-        .WithName("GetWeatherForecast")
-        .WithOpenApi();
-
-        app.Run();
-    }
+    // Enable Swagger in development
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+else
+{
+    // Production settings
+    app.UseExceptionHandler("/Home/Error"); // Custom error page in production
+    app.UseHsts(); // Enforce HTTPS in production
+}
+
+// app.UseHttpsRedirection();
+app.UseStaticFiles(); 
+
+app.UseRouting();
+
+// Enable CORS
+app.UseCors("AllowSpecificOrigin");
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();

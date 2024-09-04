@@ -1,6 +1,7 @@
 using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;  // For ICollection
+using System.ComponentModel.DataAnnotations;  // For data annotations like [Key], [Required]
+using System.ComponentModel.DataAnnotations.Schema;  // For [Table]
 
 namespace HBAPI.Models
 {
@@ -39,5 +40,9 @@ namespace HBAPI.Models
 
         [StringLength(45)]
         public string? Coupon { get; set; }
+
+        // Navigation properties for relationships
+        public ICollection<ClassDay> ClassDays { get; set; }
+        public ICollection<ClassLevel> ClassLevels { get; set; }
     }
 }

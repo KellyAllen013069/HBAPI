@@ -1,6 +1,9 @@
-namespace HBAPI.Models;
-
-public class LevelName
+namespace HBAPI.Models
 {
-    
+    public enum LevelName
+    {
+        Beginner,
+        Intermediate,
+        Advanced
+    }
 }

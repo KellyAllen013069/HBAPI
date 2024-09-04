@@ -1,6 +1,6 @@
 using HBAPI.DTOs;
 
-namespace HBAPI.Models
+namespace HBAPI.DTOs
 {
     public class CreateDanceClassRequest
     {

@@ -1,6 +1,13 @@
-namespace HBAPI.Models;
-
-public class DayName
+namespace HBAPI.Models
 {
-    
+    public enum DayName
+    {
+        Monday,
+        Tuesday,
+        Wednesday,
+        Thursday,
+        Friday,
+        Saturday,
+        Sunday
+    }
 }
