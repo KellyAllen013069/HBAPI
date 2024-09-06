@@ -15,6 +15,7 @@ namespace HBAPI.Data
         public DbSet<ClassLevel> ClassLevels { get; set; }
         public DbSet<Day> Days { get; set; }
         public DbSet<Level> Levels { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,47 +1,20 @@
 using HBAPI.Data;
 using HBAPI.Converters;
+using HBAPI.Configuration;  // Import the configuration classes
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure services
-builder.Services.AddDbContext<HbDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 21))
-    )
-);
-
-// Add services to the container
-builder.Services.AddControllers().AddJsonOptions(options =>
-{
-    // Serialize enums as strings in JSON responses
-    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    
-    // Add custom converter for DateTime serialization as "yyyy-MM-dd"
-    options.JsonSerializerOptions.Converters.Add(new DateOnlyConverter());
-
-    // Handle circular references by ignoring them
-    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-    
-    // Other serialization options can be added here if needed
-});
-
-// Add Swagger services
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Add CORS policy
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigin",
-        policy => policy.WithOrigins("http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod());
-});
+builder.Services.AddDatabase(builder.Configuration);  
+builder.Services.AddControllersWithOptions();         
+builder.Services.AddAuthenticationWithJwt(builder.Configuration);  
+builder.Services.AddSwaggerDocumentation();           
+builder.Services.AddCustomCors();                     
 
 var app = builder.Build();
 
@@ -49,28 +22,18 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
-
-    // Enable Swagger in development
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerDocumentation(); 
 }
 else
 {
-    // Production settings
-    app.UseExceptionHandler("/Home/Error"); // Custom error page in production
-    app.UseHsts(); // Enforce HTTPS in production
+    app.UseProductionErrorHandling(); 
 }
 
 // app.UseHttpsRedirection();
-app.UseStaticFiles(); 
-
+app.UseStaticFiles();
 app.UseRouting();
-
-// Enable CORS
 app.UseCors("AllowSpecificOrigin");
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
